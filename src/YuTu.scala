@@ -61,19 +61,12 @@ object YuTu {
       os.println(position)
     }
 
-    //    while(true){
-    //      val input = readLine
-    //      os.println(input)
-    //    }
   }
 
   //get current road map
   def set_current_map(task_map:ArrayBuffer[Tuple4[Float,Float,Float, Float]]): Unit = {
     current_road(0) = task_map.head
     current_road(1) = task_map(1)
-//    println("=="*30)
-//    println(task_map(1)._1)
-//    println(task_map(1)._2)
 
   }
 
@@ -89,11 +82,28 @@ object YuTu {
 
   }
 
+  //obstacle
+  def aviod_obstacle(cx:Float, cy:Float):ArrayBuffer[Float] = {
+    val r = 1.toFloat
+    val direction = new(util.Random).nextInt(1000) //obstacle direction, 0->x, 1->y
+    var x1 = cx
+    var y1 = cy
+    if (direction==0) { //x aixs obstacle
+      x1 = cx + 2 * r
+    }else {
+      y1 = cy + 2 * r
+    }
+
+    var new_coordinate = ArrayBuffer(x1, y1)
+    new_coordinate
+  }
+
   //calculate positon of running Yutu.
   def report_postion(current_road:Array[Tuple4[Float,Float,Float, Float]]):String = {
+    val v = 1.toFloat
     //current coordinate
-    val x: Float = timer_cout * 1 * angle(1) //t * v * cos
-    val y: Float = timer_cout * 1 * angle(0) //t * v * sin
+    val x: Float = timer_cout * v * angle(1) //t * v * cos
+    val y: Float = timer_cout * v * angle(0) //t * v * sin
 
     //whether or not reach to next coordinate
     //current road length
@@ -109,16 +119,36 @@ object YuTu {
     println(dl)
     println(pl)
 
+
+
     var result = x.toString + ',' + y.toString + ',' + 1 + ',' + angle(0).toString + ';' + current_road.last._1.toString + ',' + current_road.last._2.toString + ',' + current_road.last._3.toString + ',' + angle(0).toString
-    if (dl > pl) {
+
+    //obstacle
+    val probability = new(util.Random).nextInt(100000)
+    val  is_obstacle = if (probability==99) true else false
+    if (is_obstacle) { // to find obstacle,to avoid obstacle
+      road_map.trimStart(1) //delete acrross coordinate.
+      val accros_coordinate = aviod_obstacle(x,y)
+      val new_coordinate = Tuple4(x, y, v, angle(0))
+
+      road_map.insert(0,new_coordinate)
+      var current_coordinate = Tuple4(accros_coordinate(0), accros_coordinate(1), v, angle(0))
+
+      road_map.insert(1,current_coordinate)
+      set_current_map(road_map)
+      caluate_angle(current_road)
+      timer_cout = 0
+
+      result
+    } else if (dl > pl) { //whether reach next coordinate.
       if (road_map.length == 2) {
         result = "End Task!"
 
         result
       } else {
         //set next road map
-        road_map.trimStart(1)
-        val v = 1.toFloat
+        road_map.trimStart(1) //delete acrross coordinate.
+//        val v = 1.toFloat
         road_map(0) = Tuple4(x, y, v, angle(0))
         set_current_map(road_map)
         caluate_angle(current_road)

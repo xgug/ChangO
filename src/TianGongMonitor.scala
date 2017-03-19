@@ -18,7 +18,6 @@ object TianGongMonitor {
   def main(args : Array[String]) : Unit = {
 
     val users = new ArrayBuffer[User] with SynchronizedBuffer[User]
-//    road_map += ("0,0,1;10,0,1;50,0,1","0,0,1;0,2000,1;0,5000,1", "0,0,1;1000,1000,1;5000,5000,1", "0,0,1;20,0,1;30,10,1", "0,0,1;10,0,1;20,10,1")
 
     //load road map.
     load_road_map()
@@ -38,18 +37,20 @@ object TianGongMonitor {
           //join message into message box for per client.
           message_boxs(yutu_name) = ""
 
-          //assign jobs for per client of YuTu.
-          val r_map = road_map.last
-          road_map.trimEnd(1)
-          os.println("Task:Hello "+ yutu_name + "! This your map, please run it,God bless you. => " + r_map)
-          println(r_map)
+          if (road_map.nonEmpty){
+            //assign jobs for per client of YuTu.
+            val r_map = road_map.last
+            road_map.trimEnd(1)
+            os.println("Task:Hello "+ yutu_name + "! This your road map, please run it,God bless you. => " + r_map)
+            println(r_map)
+          } else {
+            os.println("Complete Task of all! please exit: "+ yutu_name + " This no road map for you, please go out. ")
+          }
 
         }
       }
     }
 
-
-    var i = 0
     while(true){
       for(user <- users){
         if(user.is.ready()){
@@ -59,7 +60,6 @@ object TianGongMonitor {
           //update status for client.
           message_boxs(user.name) = recieve
 
-          i = i + 1
           //checked whether or not complete task for per YuTu
           if (message_boxs.contains(user.name)){
             if ( input.startsWith("End")){
@@ -67,7 +67,7 @@ object TianGongMonitor {
               println(user.name + " have completed task and will exit.")
               message_boxs -= user.name
             } else {
-              user.ps.println(" Hello Yu!" + user.name + " " + i)
+              user.ps.println(" Hello Yu!" + user.name)
             }
           }
 
@@ -75,18 +75,20 @@ object TianGongMonitor {
 
         // print monitor message.
         Thread.sleep(500)
-        println("=="*80)
-        for ((k,v) <- message_boxs) {
-          println("--"*80)
-          val ms = parse_yutu_message(v)
+        if (message_boxs.nonEmpty){
+          println("=="*80)
+          for ((k,v) <- message_boxs) {
+            println("--"*80)
+            val ms = parse_yutu_message(v)
 
-          if (ms.nonEmpty && ms.length==2) {
+            if (ms.nonEmpty && ms.length==2) {
+              val  f_p = forecast_postion(ms) // forecast coordinate after two seconds.
+              println("Name: " + k + " current coordinate:["+ ms(0)(0) +','+ ms(0)(1) + "] destination coordinate:[" + ms(1)(0) +','+ ms(1)(2) +
+                        "] speed:[" + ms(0)(2) + "] angle:[" + ms(0)(3) + "] forecast coordinate:[" + f_p(0) + ',' + f_p(1) + "]"
+                        )
+            }
 
-            println("Name: " + k + " current coordinate:["+ ms(0)(0) +','+ ms(0)(1) + "] destination coordinate:[" + ms(1)(0) +','+ ms(1)(2) +
-                      "] speed:[" + ms(0)(2) + "] angle:[" + ms(0)(3) + "]"
-                      )
           }
-
         }
 
       }
@@ -119,6 +121,26 @@ object TianGongMonitor {
     }
 
 //    result.foreach(x => println(x))
+  }
+
+  //forecast current coordinate for next two seconds.
+  def forecast_postion(position:Array[List[String]]):List[String] = {
+    //road
+    val tmp0 = position.head
+    val tmp1 = for (x <- tmp0) yield x.toFloat
+
+    var dl = tmp1(2) * 2 // v*t
+    var y1 = dl * tmp1(3) // l * sin()
+    var tx2 = math.pow(dl,2) - math.pow(y1,2)
+    var x1 = math.sqrt(tx2)
+    //coordinate after two seconds.
+    var x = tmp1.head + x1
+    var y = tmp1(1) + y1
+
+    val forecast_p = List(x,y,tmp1(2),tmp1(3))
+    val fp = for (x <- forecast_p) yield x.toString
+
+    fp
   }
 
 }
